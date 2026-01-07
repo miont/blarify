@@ -28,6 +28,7 @@ class GraphBuilder:
         names_to_skip: Optional[list[str]] = None,
         graph_environment: Optional[GraphEnvironment] = None,
         generate_embeddings: bool = False,
+        resolver_mode: Optional[ResolverMode] = None,
     ):
         """
         A class responsible for constructing a graph representation of a project's codebase.
@@ -56,6 +57,7 @@ class GraphBuilder:
         self.names_to_skip = names_to_skip or []
         self.db_manager = db_manager
         self.generate_embeddings = generate_embeddings
+        self.resolver_mode = resolver_mode or ResolverMode.AUTO
 
         self.only_hierarchy = only_hierarchy
 
@@ -264,8 +266,8 @@ class GraphBuilder:
             blarignore_path=self.root_path + "/.blarignore",
         )
 
-    def _get_started_reference_query_helper(self):
-        reference_query_helper = HybridReferenceResolver(root_uri=self.root_path, mode=ResolverMode.AUTO)
+    def _get_started_reference_query_helper(self) -> HybridReferenceResolver:
+        reference_query_helper = HybridReferenceResolver(root_uri=self.root_path, mode=self.resolver_mode)
         return reference_query_helper
 
     def _convert_file_path_to_node_path(self, file_path: str) -> str:
