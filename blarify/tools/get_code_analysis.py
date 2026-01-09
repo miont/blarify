@@ -4,10 +4,9 @@ from typing import Any, Optional, List
 
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from blarify.repositories.graph_db_manager.db_manager import AbstractDbManager
-from blarify.tools.utils import resolve_reference_id
 from blarify.repositories.graph_db_manager.dtos.node_search_result_dto import ReferenceSearchResultDTO
 from blarify.repositories.graph_db_manager.dtos.edge_dto import EdgeDTO
 from blarify.graph.relationship.relationship_type import RelationshipType
@@ -15,13 +14,17 @@ from blarify.graph.relationship.relationship_type import RelationshipType
 logger = logging.getLogger(__name__)
 
 
-# We use DTOs directly from the database manager
+class CodeAnalysisInput(BaseModel):
+    """Input schema for getting code analysis."""
 
+    reference_id: str = Field(description="Reference ID (32-char handle) for the symbol")
 
-class FlexibleInput(BaseModel):
-    reference_id: Optional[str] = Field(None, description="Reference ID (32-char handle) for the symbol")
-    file_path: Optional[str] = Field(None, description="Path to the file containing the symbol")
-    symbol_name: Optional[str] = Field(None, description="Name of the function/class/method")
+    @field_validator("reference_id", mode="before")
+    @classmethod
+    def validate_reference_id(cls, value: Any) -> str:
+        if isinstance(value, str) and len(value) == 32:
+            return value
+        raise ValueError("Reference ID must be a 32 character string")
 
 
 class GetCodeAnalysis(BaseTool):
@@ -32,7 +35,7 @@ class GetCodeAnalysis(BaseTool):
         "with reference IDs for navigation."
     )
 
-    args_schema: type[BaseModel] = FlexibleInput  # type: ignore[assignment]
+    args_schema: type[BaseModel] = CodeAnalysisInput  # type: ignore[assignment]
 
     db_manager: AbstractDbManager = Field(description="Database manager for queries")
 
@@ -150,23 +153,12 @@ CODE for {node_result.node_name}:
 
     def _run(
         self,
-        reference_id: Optional[str] = None,
-        file_path: Optional[str] = None,
-        symbol_name: Optional[str] = None,
+        reference_id: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Returns code analysis for a symbol with relationships."""
-        if reference_id:
-            if len(reference_id) != 32:
-                return f"Invalid input: reference_id must be exactly 32 characters, got {len(reference_id)}. Provide a valid reference_id OR both file_path and symbol_name."
-        elif not (file_path and symbol_name):
-            return "Invalid input: Provide either reference_id (32-char) OR both file_path and symbol_name together."
-
         try:
-            node_id = resolve_reference_id(
-                self.db_manager, reference_id=reference_id, file_path=file_path, symbol_name=symbol_name
-            )
-            node_result = self.db_manager.get_node_by_id(node_id=node_id)
+            node_result = self.db_manager.get_node_by_id(node_id=reference_id)
         except ValueError as e:
             return f"No code found: {str(e)}"
 
@@ -178,7 +170,7 @@ CODE for {node_result.node_name}:
         # Filter out NODE label from display
         labels = [label for label in node_result.node_labels if label != "NODE"]
         output += f"🏷️  Labels: {', '.join(labels)}\n"
-        output += f"🆔 Node ID: {node_id}\n"
+        output += f"🆔 REFERENCE ID: {reference_id}\n"
         output += "-" * 80 + "\n"
 
         # Display code
