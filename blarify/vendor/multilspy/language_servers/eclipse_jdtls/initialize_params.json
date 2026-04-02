@@ -521,14 +521,14 @@
                 },
                 "import": {
                     "maven": {
-                        "enabled": true,
+                        "enabled": false,
                         "offline": {
-                            "enabled": false
+                            "enabled": true
                         },
                         "disableTestClasspathFlag": false
                     },
                     "gradle": {
-                        "enabled": true,
+                        "enabled": false,
                         "wrapper": {
                             "enabled": true
                         },
@@ -558,8 +558,8 @@
                     "generatesMetadataFilesAtProjectRoot": false
                 },
                 "maven": {
-                    "downloadSources": true,
-                    "updateSnapshots": true
+                    "downloadSources": false,
+                    "updateSnapshots": false
                 },
                 "eclipse": {
                     "downloadSources": true

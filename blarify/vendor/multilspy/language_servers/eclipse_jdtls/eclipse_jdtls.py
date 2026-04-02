@@ -397,7 +397,11 @@ class EclipseJDTLS(LanguageServer):
             assert intellicode_enable_result
 
             # TODO: Add comments about why we wait here, and how this can be optimized
-            await self.service_ready_event.wait()
+            try:
+                await asyncio.wait_for(self.service_ready_event.wait(), 300)
+            except asyncio.TimeoutError:
+                self.logger.log("EclipseJDTLS ServiceReady timeout, proceeding anyway",
+  logging.WARNING)
 
             yield self
 
