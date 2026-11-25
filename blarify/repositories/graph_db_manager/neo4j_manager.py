@@ -215,7 +215,7 @@ class Neo4jManager(AbstractDbManager):
 
         return records  # Return the records so execute_write can access them
 
-    def detatch_delete_nodes_with_path(self, path: str):
+    def detach_delete_nodes_with_path(self, path: str):
         if self.repo_id is None:
             raise ValueError("repo_id is required for deleting nodes. Cannot delete nodes with entity-wide scope.")
 

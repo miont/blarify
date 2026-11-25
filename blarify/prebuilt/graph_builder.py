@@ -11,11 +11,6 @@ from blarify.agents.llm_provider import LLMProvider
 from blarify.repositories.graph_db_manager.db_manager import AbstractDbManager
 from blarify.utils.path_calculator import PathCalculator
 from blarify.graph.node.utils.id_calculator import IdCalculator
-from ..repositories.graph_db_manager.graph_queries import (
-    detach_delete_nodes_by_paths_query,
-    match_empty_folders_query,
-    detach_delete_nodes_by_node_ids_query,
-)
 
 
 class GraphBuilder:
@@ -225,38 +220,12 @@ class GraphBuilder:
         return graph
 
     def _detatch_delete_nodes_by_paths(self, file_paths: list[str]):
-        query = detach_delete_nodes_by_paths_query()
-        self.db_manager.query(
-            query,
-            parameters={
-                "file_paths": file_paths,
-            },
-            transaction=True,
-        )
-
-    def __detatch_delete_nodes_by_node_ids(self, node_ids: list[str]):
-        query = detach_delete_nodes_by_node_ids_query()
-        self.db_manager.query(
-            query,
-            parameters={
-                "node_ids": node_ids,
-            },
-            transaction=True,
-        )
-
-    def __match_empty_folders(self):
-        query = match_empty_folders_query()
-        result = self.db_manager.query(
-            query,
-            parameters={},
-        )
-
-        return result
+        self.db_manager.detach_delete_nodes_by_paths(file_paths)
 
     def _detatch_empty_folder_nodes_iteratively(self):
-        while empty_folders := self.__match_empty_folders():
+        while empty_folders := self.db_manager.match_empty_folders():
             empty_nodes_ids = [folder["folder"]["node_id"] for folder in empty_folders]
-            self.__detatch_delete_nodes_by_node_ids(empty_nodes_ids)
+            self.db_manager.detach_delete_nodes_by_node_ids(empty_nodes_ids)
 
     def _get_project_files_iterator(self):
         return ProjectFilesIterator(

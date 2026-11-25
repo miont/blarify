@@ -93,7 +93,7 @@ class FalkorDBManager(AbstractDbManager):
         result = graph.query(cypher_query, params={"path": path})
         return result.result_set
 
-    def query(self, cypher_query: str, parameters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    def query(self, cypher_query: str, parameters: Dict[str, Any] = None, transaction: bool = False) -> List[Dict[str, Any]]:
         """
         Execute a Cypher query and return the results.
 
@@ -109,7 +109,9 @@ class FalkorDBManager(AbstractDbManager):
 
         try:
             graph = self.db.select_graph(self.repo_id)
-            result = graph.query(cypher_query, params=parameters)
+            # Each graph.query executes one atomic statement.
+            params = {"repo_id": self.repo_id, "entity_id": self.entity_id, **parameters}
+            result = graph.query(cypher_query, params=params)
 
             # Convert FalkorDB result to dictionary format
             results = []

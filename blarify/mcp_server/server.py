@@ -11,9 +11,7 @@ from fastmcp import FastMCP
 from blarify.cli.project_config import ProjectConfig
 from blarify.mcp_server.config import MCPServerConfig
 from blarify.mcp_server.tools import MCPToolWrapper
-from blarify.repositories.graph_db_manager.db_manager import AbstractDbManager
-from blarify.repositories.graph_db_manager.falkordb_manager import FalkorDBManager
-from blarify.repositories.graph_db_manager.neo4j_manager import Neo4jManager
+from blarify.repositories.graph_db_manager import AbstractDbManager, create_db_manager
 
 # Import all Blarify tools
 from blarify.tools import (
@@ -52,7 +50,7 @@ class BlarifyMCPServer:
     def _initialize_db_manager(self) -> AbstractDbManager:
         """Initialize the database manager based on configuration."""
         if self.config.db_type == "neo4j":
-            return Neo4jManager(
+            return create_db_manager("neo4j",
                 uri=self.config.neo4j_uri,
                 user=self.config.neo4j_username,
                 password=self.config.neo4j_password,
@@ -62,7 +60,7 @@ class BlarifyMCPServer:
         elif self.config.db_type == "falkordb":
             if not self.config.falkor_host:
                 raise ValueError("FalkorDB configuration incomplete")
-            return FalkorDBManager(
+            return create_db_manager("falkordb",
                 uri=self.config.falkor_host,
                 repo_id=self.config.root_path,  # Use root_path as repo_id
                 entity_id=self.config.entity_id,

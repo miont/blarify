@@ -1,6 +1,13 @@
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List, Dict, Any, LiteralString, Optional
 
+from blarify.repositories.graph_db_manager.graph_queries import (
+    detach_delete_nodes_by_diff_identifier_query,
+    detach_delete_nodes_by_node_ids_query,
+    detach_delete_nodes_by_paths_query,
+    match_empty_folders_query,
+)
 from blarify.repositories.graph_db_manager.dtos.node_search_result_dto import ReferenceSearchResultDTO
 
 
@@ -9,27 +16,49 @@ class ENVIRONMENT(Enum):
     DEV = "dev"
 
 
-class AbstractDbManager:
+class AbstractDbManager(ABC):
+    @abstractmethod
     def close(self):
         """Close the connection to the database."""
         raise NotImplementedError
 
+    @abstractmethod
     def save_graph(self, nodes: List[Any], edges: List[Any]) -> None:
         """Save nodes and edges to the database."""
         raise NotImplementedError
 
+    @abstractmethod
     def create_nodes(self, nodeList: List[Any]) -> None:
         """Create nodes in the database."""
         raise NotImplementedError
 
+    @abstractmethod
     def create_edges(self, edgesList: List[Any]) -> None:
         """Create edges between nodes in the database."""
         raise NotImplementedError
 
     def detatch_delete_nodes_with_path(self, path: str) -> None:
+        """Backward-compatible spelling used by earlier clients."""
+        return self.detach_delete_nodes_with_path(path)
+
+    def detach_delete_nodes_by_paths(self, file_paths: list[str]) -> None:
+        self.query(detach_delete_nodes_by_paths_query(), {"file_paths": file_paths}, transaction=True)
+
+    def detach_delete_nodes_by_diff_identifier(self, diff_identifier: str) -> None:
+        self.query(detach_delete_nodes_by_diff_identifier_query(), {"diff_identifier": diff_identifier}, transaction=True)
+
+    def detach_delete_nodes_by_node_ids(self, node_ids: list[str]) -> None:
+        self.query(detach_delete_nodes_by_node_ids_query(), {"node_ids": node_ids}, transaction=True)
+
+    def match_empty_folders(self) -> list[dict]:
+        return self.query(match_empty_folders_query(), {})
+
+    @abstractmethod
+    def detach_delete_nodes_with_path(self, path: str) -> None:
         """Detach and delete nodes matching the given path."""
         raise NotImplementedError
 
+    @abstractmethod
     def query(
         self, cypher_query: LiteralString, parameters: Optional[Dict[str, Any]] = None, transaction: bool = False
     ) -> List[Dict[str, Any]]:
